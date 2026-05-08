@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ColorVision Test | Проверка цветового зрения</title>
+  <style>
+    :root {
+      --bg: #f0f4f8; --surface: #ffffff; --text: #1a202c; --text-muted: #718096;
+      --primary: #3182ce; --primary-dark: #2b6cb0; --success: #38a169; --warning: #d69e2e;
+      --danger: #e53e3e; --border: #e2e8f0; --radius: 16px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08); --font: system-ui, -apple-system, sans-serif;
+    }
+    [data-theme="dark"] {
+      --bg: #1a202c; --surface: #2d3748; --text: #f7fafc; --text-muted: #a0aec0;
+      --border: #4a5568; --shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.25s ease; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; padding: 1rem; }
+    .app { max-width: 700px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+    .disclaimer { background: #fef3c7; border: 1px solid #f6e05e; border-radius: 10px; padding: 0.8rem; margin-bottom: 1.5rem; font-size: 0.8rem; color: #975a16; text-align: center; }
+    [data-theme="dark"] .disclaimer { background: #44403c; border-color: #78716c; color: #d6d3d1; }
+
+    .progress-bar { background: var(--border); border-radius: 20px; height: 8px; margin-bottom: 1.5rem; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 20px; transition: width 0.5s ease; }
+
+    .card { background: var(--surface); padding: 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 1.5rem; text-align: center; }
+    .card h2 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+    .card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; }
+
+    .test-area { display: flex; justify-content: center; align-items: center; margin: 1rem auto; position: relative; }
+    canvas { border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 100%; }
+
+    .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
+    .option-btn { padding: 0.8rem; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .option-btn:hover { border-color: var(--primary); background: #ebf8ff; transform: scale(1.05); }
+    [data-theme="dark"] .option-btn:hover { background: #2a4365; }
+    .option-btn.correct { border-color: var(--success); background: #f0fff4; animation: correctPulse 0.5s; }
+    .option-btn.wrong { border-color: var(--danger); background: #fff5f5; animation: shake 0.5s; }
+    [data-theme="dark"] .option-btn.correct { background: #276749; }
+    [data-theme="dark"] .option-btn.wrong { background: #9b2c2c; }
+
+    .option-btn.text-opt { font-size: 1rem; padding: 0.6rem; }
+
+    @keyframes correctPulse { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+    .results { display: none; }
+    .results.active { display: block; }
+    .result-score { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .result-label { font-size: 1.2rem; font-weight: 600; margin: 0.5rem 0; }
+    .result-desc { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; }
+
+    .result-bars { text-align: left; margin: 1rem 0; }
+    .result-bar-item { margin-bottom: 0.5rem; }
+    .result-bar-label { font-size: 0.85rem; margin-bottom: 0.2rem; display: flex; justify-content: space-between; }
+    .result-bar-bg { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .result-bar-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+
+    .btn { padding: 0.8rem 2rem; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+    .btn-secondary { background: var(--border); color: var(--text); margin-left: 0.5rem; }
+
+    .timer { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .timer.warning { color: var(--danger); font-weight: 700; }
+
+    .nav-dots { display: flex; justify-content: center; gap: 0.4rem; margin-bottom: 1rem; }
+    .nav-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+    .nav-dot.active { background: var(--primary); transform: scale(1.2); }
+    .nav-dot.completed { background: var(--success); }
+    .nav-dot.failed { background: var(--danger); }
+
+    .type-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .type-badge.ishihara { background: #ebf8ff; color: #3182ce; }
+    .type-badge.difference { background: #fefcbf; color: #975a16; }
+    .type-badge.gradient { background: #fed7e2; color: #c53030; }
+    .type-badge.contrast { background: #e9d8fd; color: #6b46c1; }
+    [data-theme="dark"] .type-badge.ishihara { background: #2a4365; color: #90cdf4; }
+    [data-theme="dark"] .type-badge.difference { background: #44403c; color: #d69e2e; }
+    [data-theme="dark"] .type-badge.gradient { background: #4a3040; color: #feb2b2; }
+    [data-theme="dark"] .type-badge.contrast { background: #353050; color: #b794f4; }
+
+    .history { text-align: left; margin-top: 1rem; }
+    .history-item { padding: 0.6rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; display: flex; justify-content: space-between; }
+    .history-date { color: var(--text-muted); }
+
+    @media (max-width: 500px) {
+      .options { grid-template-columns: repeat(3, 1fr); }
+      .card { padding: 1rem; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>👁️ Тестер цветового зрения</h1>
+      <div class="subtitle">5 типов тестов • 25 вопросов • ~5 минут</div>
+    </header>
+
+    <div class="disclaimer">
+      ⚠️ Этот тест не является медицинским диагнозом. При подозрении на нарушение цветового зрения обратитесь к офтальмологу.
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="nav-dots" id="nav-dots"></div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="card">
+      <h2>Готовы проверить зрение?</h2>
+      <p>Тест включает 5 категорий, по 5 вопросов в каждой. Отвечайте честно и при хорошем освещении.</p>
+      <div style="text-align:left; margin:1rem 0;">
+        <div style="padding:0.4rem 0; font-size:0.9rem;"> <b>Исихара</b> — поиск цифр среди цветных точек</div>
+        <div style="padding:0.4rem 0; font-size:0.9rem;"> <b>Различие</b> — найди отличающийся цвет</div>
+        <div style="padding:0.4rem 0; font-size:0.9rem;">🟣 <b>Градиенты</b> — определи плавность перехода</div>
+        <div style="padding:0.4rem 0; font-size:0.9rem;">🟤 <b>Контраст</b> — различие близких оттенков</div>
+        <div style="padding:0.4rem 0; font-size:0.9rem;">🔴 <b>Красно-зелёный</b> — классический тест</div>
+      </div>
+      <button class="btn btn-primary" onclick="startTest()">Начать тест</button>
+    </div>
+
+    <!-- Test Screen -->
+    <div id="test-screen" style="display:none;">
+      <div class="card">
+        <span class="type-badge" id="type-badge">Исихара</span>
+        <div class="timer" id="timer">Время: 15с</div>
+        <h2 id="question-title">Вопрос 1 из 25</h2>
+        <p id="question-desc">Какую цифру вы видите?</p>
+        <div class="test-area"><canvas id="test-canvas" width="400" height="300"></canvas></div>
+        <div class="options" id="options"></div>
+      </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="results">
+      <div class="card">
+        <h2> Результаты теста</h2>
+        <div class="result-score" id="result-score">0%</div>
+        <div class="result-label" id="result-label">—</div>
+        <div class="result-desc" id="result-desc"></div>
+        <div class="result-bars" id="result-bars"></div>
+        <button class="btn btn-primary" onclick="restartTest()">Пройти ещё раз</button>
+        <button class="btn btn-secondary" onclick="showHistory()">📊 История</button>
+      </div>
+      <div id="history-card" class="card" style="display:none;">
+        <h2>📊 История тестов</h2>
+        <div id="history-list"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ==================== STATE ====================
+  const TOTAL = 25;
+  const Q_PER_TYPE = 5;
+  const TYPES = ['ishihara', 'difference', 'gradient', 'contrast', 'redgreen'];
+  const TYPE_LABELS = {
+    ishihara: 'Исихара', difference: 'Различие цветов',
+    gradient: 'Градиенты', contrast: 'Контраст', redgreen: 'Красно-зелёный'
+  };
+  let questions = [], currentQ = 0, answers = [], timerInterval = null, timeLeft = 0;
+  const canvas = document.getElementById('test-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // ==================== COLOR UTILS ====================
+  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  // Generate a random RGB color
+  function randColor() { return [rand(0,255), rand(0,255), rand(0,255)]; }
+
+  // Convert RGB to HSL
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch(max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return [h * 360, s * 100, l * 100];
+  }
+
+  // Convert HSL to RGB
+  function hslToRgb(h, s, l) {
+    h /= 360; s /= 100; l /= 100;
+    let r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  }
+
+  function rgbStr(c) { return `rgb(${c[0]},${c[1]},${c[2]})`; }
+  function dist(c1, c2) { return Math.sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2 + (c1[2]-c2[2])**2); }
+
+  // ==================== QUESTION GENERATORS ====================
+
+  // 1. Ishihara-style test
+  function genIshihara(difficulty) {
+    const digits = ['3','7','12','5','8','6','9','4','2','15'];
+    const digit = digits[rand(0, digits.length - 1)];
+    const bgHue = rand(0, 360);
+    const figHue = (bgHue + rand(120, 180)) % 360; // Opposite hue
+    const bgSat = rand(50, 70), bgLum = rand(50, 65);
+    const figSat = rand(60, 80), figLum = rand(45, 60);
+
+    // Reduce difference for harder questions
+    const hueDiff = difficulty === 'hard' ? rand(40, 70) : rand(120, 180);
+    const figH = (bgHue + hueDiff) % 360;
+
+    return {
+      type: 'ishihara', typeLabel: 'Исихара', typeClass: 'ishihara',
+      desc: 'Какую цифру вы видите?',
+      answer: digit,
+      draw: () => drawIshihara(bgHue, bgSat, bgLum, figH, figSat, figLum, digit, difficulty),
+      options: genDigitOptions(digit)
+    };
+  }
+
+  function drawIshihara(bgH, bgS, bgL, figH, figS, figL, digit, difficulty) {
+    const w = 400, h = 300;
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw background circles
+    const bgBase = hslToRgb(bgH, bgS, bgL);
+    for (let i = 0; i < 600; i++) {
+      const x = rand(0, w);
+      const y = rand(0, h);
+      const r = rand(8, 20);
+      const variation = rand(-30, 30);
+      const c = [
+        clamp(bgBase[0] + variation, 0, 255),
+        clamp(bgBase[1] + variation, 0, 255),
+        clamp(bgBase[2] + variation + rand(-10, 10), 0, 255)
+      ];
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = rgbStr(c);
+      ctx.fill();
+    }
+
+    // Draw digit using circles of figure color
+    ctx.save();
+    ctx.font = `bold ${difficulty === 'hard' ? 100 : 120}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ff0000'; // Will be masked
+    ctx.fillText(digit, w/2, h/2);
+
+    // Create figure circles only where text was drawn
+    const imageData = ctx.getImageData(0, 0, w, h);
+    ctx.restore();
+
+    const figBase = hslToRgb(figH, figS, figL);
+    for (let i = 0; i < 300; i++) {
+      const x = rand(40, w - 40);
+      const y = rand(40, h - 40);
+      const r = rand(8, 18);
+
+      // Check if this position is within the digit area
+      const px = Math.floor(x);
+      const py = Math.floor(y);
+      if (px >= 0 && px < w && py >= 0 && py < h) {
+        const idx = (py * w + px) * 4;
+        if (imageData.data[idx] > 128) { // Was part of text
+          const variation = rand(-20, 20);
+          const c = [
+            clamp(figBase[0] + variation, 0, 255),
+            clamp(figBase[1] + variation, 0, 255),
+            clamp(figBase[2] + variation, 0, 255)
+          ];
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fillStyle = rgbStr(c);
+          ctx.fill();
+        }
+      }
+    }
+  }
+
+  function genDigitOptions(correct) {
+    const all = ['2','3','4','5','6','7','8','9','12','15','18','21'];
+    let opts = [correct];
+    while (opts.length < 4) {
+      const v = all[rand(0, all.length - 1)];
+      if (!opts.includes(v)) opts.push(v);
+    }
+    return opts.sort(() => Math.random() - 0.5);
+  }
+
+  // 2. Color difference test
+  function genDifference(difficulty) {
+    const baseH = rand(0, 360), baseS = rand(60, 80), baseL = rand(40, 60);
+    const diffAmount = difficulty === 'easy' ? rand(30, 50) : difficulty === 'medium' ? rand(15, 30) : rand(5, 15);
+    const targetH = (baseH + diffAmount) % 360;
+    const pos = rand(0, 8); // Position in 3x3 grid
+
+    return {
+      type: 'difference', typeLabel: 'Различие цветов', typeClass: 'difference',
+      desc: 'Найдите квадрат с отличающимся цветом',
+      answer: pos,
+      draw: () => drawDifference(baseH, baseS, baseL, targetH, pos),
+      options: [0,1,2,3,4,5,6,7,8].sort(() => Math.random() - 0.5),
+      optionType: 'position'
+    };
+  }
+
+  function drawDifference(baseH, baseS, baseL, targetH, targetPos) {
+    const w = 360, h = 300, cell = 100, gap = 10;
+    ctx.clearRect(0, 0, w, h);
+    const offsetX = (400 - w) / 2, offsetY = (300 - h) / 2;
+
+    for (let i = 0; i < 9; i++) {
+      const col = i % 3, row = Math.floor(i / 3);
+      const x = offsetX + col * (cell + gap);
+      const y = offsetY + row * (cell + gap);
+      const isTarget = i === targetPos;
+      const c = isTarget ? hslToRgb(targetH, baseS, baseL) : hslToRgb(baseH, baseS, baseL);
+      ctx.fillStyle = rgbStr(c);
+      ctx.beginPath();
+      ctx.roundRect(x, y, cell, cell, 12);
+      ctx.fill();
+    }
+  }
+
+  // 3. Gradient test
+  function genGradient(difficulty) {
+    const startH = rand(0, 360), endH = (startH + rand(60, 150)) % 360;
+    const steps = difficulty === 'hard' ? 8 : 6;
+    const badPos = rand(0, steps - 1);
+    const swapWith = rand(0, steps - 1);
+
+    return {
+      type: 'gradient', typeLabel: 'Градиенты', typeClass: 'gradient',
+      desc: 'Какой блок нарушает плавность градиента? (номер слева)',
+      answer: badPos + 1,
+      draw: () => drawGradient(startH, endH, steps, badPos),
+      options: Array.from({length: steps}, (_, i) => i + 1).sort(() => Math.random() - 0.5)
+    };
+  }
+
+  function drawGradient(startH, endH, steps, badPos) {
+    const w = 380, h = 120;
+    ctx.clearRect(0, 0, 400, 300);
+    const cellW = w / steps;
+    const colors = [];
+
+    for (let i = 0; i < steps; i++) {
+      const t = i / (steps - 1);
+      let h = startH + (endH - startH) * t;
+      if (h < 0) h += 360;
+      colors.push(hslToRgb(h, 70, 55));
+    }
+
+    // Swap bad position with a random other
+    const swapIdx = rand(0, steps - 1);
+    if (swapIdx !== badPos) {
+      [colors[badPos], colors[swapIdx]] = [colors[swapIdx], colors[badPos]];
+    }
+
+    colors.forEach((c, i) => {
+      const x = (400 - w) / 2 + i * cellW;
+      ctx.fillStyle = rgbStr(c);
+      ctx.fillRect(x, 90, cellW - 2, h);
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(i + 1, x + cellW / 2, 80);
+    });
+  }
+
+  // 4. Contrast test
+  function genContrast(difficulty) {
+    const baseH = rand(0, 360), baseS = rand(50, 70), baseL = 50;
+    const diffL = difficulty === 'easy' ? rand(20, 35) : difficulty === 'medium' ? rand(10, 20) : rand(3, 10);
+    const targetL = baseL + diffL;
+    const pos = rand(0, 5);
+
+    return {
+      type: 'contrast', typeLabel: 'Контраст', typeClass: 'contrast',
+      desc: 'Найдите блок с отличающейся яркостью',
+      answer: pos,
+      draw: () => drawContrast(baseH, baseS, baseL, targetL, pos),
+      options: [0,1,2,3,4,5].sort(() => Math.random() - 0.5),
+      optionType: 'position'
+    };
+  }
+
+  function drawContrast(baseH, baseS, baseL, targetL, targetPos) {
+    const w = 360, h = 200, cell = 100, gap = 12;
+    ctx.clearRect(0, 0, 400, 300);
+    const offsetX = (400 - w) / 2, offsetY = (300 - h) / 2;
+
+    for (let i = 0; i < 6; i++) {
+      const col = i % 3, row = Math.floor(i / 3);
+      const x = offsetX + col * (cell + gap);
+      const y = offsetY + row * (cell + gap);
+      const isTarget = i === targetPos;
+      const c = isTarget ? hslToRgb(baseH, baseS, targetL) : hslToRgb(baseH, baseS, baseL);
+      ctx.fillStyle = rgbStr(c);
+      ctx.beginPath();
+      ctx.roundRect(x, y, cell, cell, 12);
+      ctx.fill();
+
+      ctx.fillStyle = '#666';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(i + 1, x + cell / 2, y + cell / 2 + 5);
+    }
+  }
+
+  // 5. Red-green test
+  function genRedGreen(difficulty) {
+    const shapes = ['●', '■', '▲', '★', '♦'];
+    const shape = shapes[rand(0, shapes.length - 1)];
+    const diffAmount = difficulty === 'hard' ? rand(3, 8) : rand(10, 20);
+    // Background: green-cyan, Figure: red-orange (or vice versa for hard)
+    const isHard = difficulty === 'hard';
+    const bgBase = isHard ? hslToRgb(150, 60, 50) : hslToRgb(140, 70, 55);
+    const figBase = isHard ? hslToRgb(10, 50, 50) : hslToRgb(5, 75, 50);
+
+    return {
+      type: 'redgreen', typeLabel: 'Красно-зелёный', typeClass: 'redgreen',
+      desc: 'Какую фигуру вы видите?',
+      answer: shape,
+      draw: () => drawRedGreen(bgBase, figBase, shape, diffAmount, isHard),
+      options: ['●', '■', '▲', '★', '♦', '◆', '⬟', '✦'].sort(() => Math.random() - 0.5).slice(0, 4)
+        .concat(shape).filter((v, i, a) => a.indexOf(v) === i).slice(0, 4),
+      optionType: 'shape'
+    };
+  }
+
+  function drawRedGreen(bgBase, figBase, shape, diffAmount, isHard) {
+    const w = 400, h = 300;
+    ctx.clearRect(0, 0, w, h);
+
+    // Background circles (green)
+    for (let i = 0; i < 500; i++) {
+      const x = rand(0, w), y = rand(0, h), r = rand(8, 18);
+      const variation = rand(-diffAmount, diffAmount);
+      const c = [
+        clamp(bgBase[0] + variation, 0, 255),
+        clamp(bgBase[1] + variation + rand(-10, 10), 0, 255),
+        clamp(bgBase[2] + variation, 0, 255)
+      ];
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = rgbStr(c);
+      ctx.fill();
+    }
+
+    // Draw shape using figure color (red)
+    ctx.save();
+    ctx.font = `bold 100px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ff0000';
+    ctx.fillText(shape, w/2, h/2);
+
+    const imageData = ctx.getImageData(0, 0, w, h);
+    ctx.restore();
+
+    // Overlay figure circles
+    for (let i = 0; i < 250; i++) {
+      const x = rand(30, w - 30), y = rand(30, h - 30), r = rand(7, 16);
+      const px = Math.floor(x), py = Math.floor(y);
+      if (px >= 0 && px < w && py >= 0 && py < h) {
+        const idx = (py * w + px) * 4;
+        if (imageData.data[idx] > 128) {
+          const variation = rand(-15, 15);
+          const c = [
+            clamp(figBase[0] + variation, 0, 255),
+            clamp(figBase[1] + variation, 0, 255),
+            clamp(figBase[2] + variation, 0, 255)
+          ];
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fillStyle = rgbStr(c);
+          ctx.fill();
+        }
+      }
+    }
+  }
+
+  // ==================== TEST GENERATION ====================
+  function generateQuestions() {
+    questions = [];
+    TYPES.forEach(type => {
+      ['easy', 'easy', 'medium', 'hard', 'hard'].forEach(diff => {
+        let q;
+        switch(type) {
+          case 'ishihara': q = genIshihara(diff); break;
+          case 'difference': q = genDifference(diff); break;
+          case 'gradient': q = genGradient(diff); break;
+          case 'contrast': q = genContrast(diff); break;
+          case 'redgreen': q = genRedGreen(diff); break;
+        }
+        q.difficulty = diff;
+        questions.push(q);
+      });
+    });
+    // Shuffle within type groups
+    TYPES.forEach(type => {
+      const start = questions.findIndex(q => q.type === type);
+      const group = questions.slice(start, start + 5);
+      group.sort(() => Math.random() - 0.5);
+      questions.splice(start, 5, ...group);
+    });
+  }
+
+  // ==================== UI ====================
+  function startTest() {
+    generateQuestions();
+    currentQ = 0;
+    answers = [];
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('results-screen').classList.remove('active');
+    document.getElementById('test-screen').style.display = 'block';
+    buildNavDots();
+    showQuestion();
+  }
+
+  function buildNavDots() {
+    const container = document.getElementById('nav-dots');
+    container.innerHTML = '';
+    for (let i = 0; i < TOTAL; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+      dot.id = `dot-${i}`;
+      container.appendChild(dot);
+    }
+  }
+
+  function showQuestion() {
+    if (currentQ >= TOTAL) { showResults(); return; }
+
+    const q = questions[currentQ];
+    document.getElementById('type-badge').textContent = q.typeLabel;
+    document.getElementById('type-badge').className = `type-badge ${q.typeClass}`;
+    document.getElementById('question-title').textContent = `Вопрос ${currentQ + 1} из ${TOTAL}`;
+    document.getElementById('question-desc').textContent = q.desc;
+
+    // Difficulty indicator
+    const diffLabel = {easy: '🟢 Легко', medium: '🟡 Средне', hard: '🔴 Сложно'}[q.difficulty];
+    document.getElementById('timer').textContent = `Сложность: ${diffLabel}`;
+    document.getElementById('timer').className = 'timer';
+
+    // Draw canvas
+    canvas.width = 400; canvas.height = 300;
+    q.draw();
+
+    // Options
+    const optsDiv = document.getElementById('options');
+    optsDiv.innerHTML = '';
+    const displayOpts = q.optionType === 'position'
+      ? q.options.map(i => `<span style="font-size:0.8rem;color:var(--text-muted)">${i + 1}</span>`)
+      : q.options;
+
+    q.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = q.optionType === 'shape' ? 'option-btn text-opt' : 'option-btn';
+      btn.textContent = q.optionType === 'position' ? (opt + 1) : opt;
+      btn.onclick = () => handleAnswer(opt, btn);
+      optsDiv.appendChild(btn);
+    });
+
+    // Update progress
+    document.getElementById('progress').style.width = `${(currentQ / TOTAL) * 100}%`;
+
+    // Update nav dots
+    document.querySelectorAll('.nav-dot').forEach((d, i) => {
+      d.className = 'nav-dot' + (i === currentQ ? ' active' : '');
+      if (i < currentQ) {
+        d.className += answers[i] ? ' completed' : ' failed';
+      }
+    });
+  }
+
+  function handleAnswer(selected, btn) {
+    const q = questions[currentQ];
+    const isCorrect = String(selected) === String(q.answer);
+    answers.push(isCorrect);
+
+    // Disable all buttons
+    document.querySelectorAll('.option-btn').forEach(b => b.style.pointerEvents = 'none');
+
+    if (isCorrect) {
+      btn.classList.add('correct');
+    } else {
+      btn.classList.add('wrong');
+      // Highlight correct answer
+      document.querySelectorAll('.option-btn').forEach(b => {
+        const val = q.optionType === 'position' ? parseInt(b.textContent) - 1 : b.textContent;
+        if (String(val) === String(q.answer)) b.classList.add('correct');
+      });
+    }
+
+    // Next question after delay
+    setTimeout(() => {
+      currentQ++;
+      showQuestion();
+    }, 800);
+  }
+
+  function showResults() {
+    document.getElementById('test-screen').style.display = 'none';
+    const resultsScreen = document.getElementById('results-screen');
+    resultsScreen.classList.add('active');
+    document.getElementById('progress').style.width = '100%';
+
+    const totalCorrect = answers.filter(a => a).length;
+    const percentage = Math.round((totalCorrect / TOTAL) * 100);
+
+    document.getElementById('result-score').textContent = `${percentage}%`;
+
+    // Determine result
+    let label, desc;
+    if (percentage >= 90) {
+      label = '🟢 Отличное цветовое зрение';
+      desc = 'Вы отлично различаете цвета. Нет признаков дальтонизма.';
+    } else if (percentage >= 70) {
+      label = '🟡 Хорошее зрение, небольшие затруднения';
+      desc = 'Возможны незначительные трудности с некоторыми оттенками. Обычно не требует коррекции.';
+    } else if (percentage >= 50) {
+      label = '🟠 Умеренные затруднения';
+      desc = 'Вы испытываете трудности с различением некоторых цветов. Рекомендуется консультация офтальмолога.';
+    } else {
+      label = '🔴 Значительные затруднения';
+      desc = 'Выраженные трудности с цветовосприятием. Настоятельно рекомендуется обратиться к специалисту.';
+    }
+
+    document.getElementById('result-label').textContent = label;
+    document.getElementById('result-desc').textContent = desc;
+
+    // Per-type results
+    const typeResults = {};
+    TYPES.forEach(t => {
+      const typeQs = questions.filter(q => q.type === t);
+      const typeStartIdx = questions.indexOf(typeQs[0]);
+      const typeAnswers = answers.slice(typeStartIdx, typeStartIdx + 5);
+      typeResults[t] = typeAnswers.filter(a => a).length;
+    });
+
+    const barsDiv = document.getElementById('result-bars');
+    barsDiv.innerHTML = '';
+    const barColors = { ishihara: '#3182ce', difference: '#d69e2e', gradient: '#e53e3e', contrast: '#805ad5', redgreen: '#38a169' };
+
+    TYPES.forEach(t => {
+      const pct = (typeResults[t] / 5) * 100;
+      const item = document.createElement('div');
+      item.className = 'result-bar-item';
+      item.innerHTML = `
+        <div class="result-bar-label"><span>${TYPE_LABELS[t]}</span><span>${typeResults[t]}/5</span></div>
+        <div class="result-bar-bg"><div class="result-bar-fill" style="width:0%;background:${barColors[t]}"></div></div>
+      `;
+      barsDiv.appendChild(item);
+      // Animate bars
+      setTimeout(() => {
+        item.querySelector('.result-bar-fill').style.width = `${pct}%`;
+      }, 100);
+    });
+
+    // Save to history
+    saveHistory(percentage, typeResults);
+  }
+
+  function restartTest() {
+    document.getElementById('results-screen').classList.remove('active');
+    document.getElementById('history-card').style.display = 'none';
+    startTest();
+  }
+
+  function saveHistory(percentage, typeResults) {
+    const history = JSON.parse(localStorage.getItem('colorvision_history') || '[]');
+    history.unshift({
+      date: new Date().toLocaleString('ru-RU'),
+      score: percentage,
+      types: typeResults
+    });
+    if (history.length > 10) history.pop();
+    localStorage.setItem('colorvision_history', JSON.stringify(history));
+  }
+
+  function showHistory() {
+    const card = document.getElementById('history-card');
+    card.style.display = card.style.display === 'none' ? 'block' : 'none';
+    const history = JSON.parse(localStorage.getItem('colorvision_history') || '[]');
+    const list = document.getElementById('history-list');
+    if (history.length === 0) {
+      list.innerHTML = '<p style="color:var(--text-muted)">Нет истории тестов</p>';
+      return;
+    }
+    list.innerHTML = history.map(h => `
+      <div class="history-item">
+        <span class="history-date">${h.date}</span>
+        <span style="font-weight:700;color:${h.score >= 70 ? 'var(--success)' : h.score >= 50 ? 'var(--warning)' : 'var(--danger)'}">${h.score}%</span>
+      </div>
+    `).join('');
+  }
+
+  // Polyfill for roundRect
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      if (typeof r === 'number') r = [r, r, r, r];
+      this.moveTo(x + r[0], y);
+      this.lineTo(x + w - r[1], y);
+      this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+      this.lineTo(x + w, y + h - r[2]);
+      this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+      this.lineTo(x + r[3], y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+      this.lineTo(x, y + r[0]);
+      this.quadraticCurveTo(x, y, x + r[0], y);
+      this.closePath();
+      return this;
+    };
+  }
+</script>
+</body>
+</html>
